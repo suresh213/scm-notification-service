@@ -24,6 +24,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class EmailService {
 
     private final JavaMailSender mailSender;
@@ -136,7 +137,7 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
-            helper.setFrom(fromEmail, fromName);
+            helper.setFrom(fromEmail, fromName != null ? fromName : "Notification Service");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(textContent, false); // false = not HTML

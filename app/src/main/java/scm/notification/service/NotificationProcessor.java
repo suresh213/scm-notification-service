@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.lang.NonNull;
+
 import java.util.UUID;
 
 @Component
@@ -29,7 +31,7 @@ public class NotificationProcessor {
 
     @Async("notificationExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void process(UUID notificationId) {
+    public void process(@NonNull UUID notificationId) {
         log.debug("Processing notification: {}", notificationId);
 
         Notification notification = repository.findById(notificationId).orElse(null);
@@ -74,6 +76,7 @@ public class NotificationProcessor {
         repository.save(notification);
     }
 
+    @SuppressWarnings("null")
     private void logAudit(UUID notificationId, String status, String details) {
         auditLogRepository.save(NotificationAuditLog.builder()
                 .notificationId(notificationId)

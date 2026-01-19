@@ -76,7 +76,12 @@ public class NotificationService {
                 logAudit(n.getId(), "RETRYING", "Retry attempt " + n.getRetryCount());
 
                 // We call processor directly (it handles async internally)
-                notificationProcessor.process(n.getId());
+                UUID notificationId = n.getId();
+                if (notificationId != null) {
+                    notificationProcessor.process(notificationId);
+                } else {
+                    log.error("Notification has null ID, skipping: {}", n);
+                }
             } catch (Exception e) {
                 log.error("Failed to process stuck notification {}", n.getId(), e);
             }
