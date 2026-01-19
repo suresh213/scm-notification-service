@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${DB_URL}
+    driverClassName: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    defer-datasource-initialization: true
+  # Email/SMTP Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  # Thymeleaf Configuration  
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: true
+
+server:
+  port: 8080
+
+# Custom Email Properties
+notification:
+  email:
+    from: ${MAIL_FROM:noreply@yourcompany.com}
+    from-name: ${MAIL_FROM_NAME:Notification Service}
+
+logging:
+  level:
+    scm.notification: INFO
