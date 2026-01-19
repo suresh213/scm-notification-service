@@ -31,6 +31,7 @@ public class NotificationService {
     private final NotificationProcessor notificationProcessor;
 
     @Transactional
+    @SuppressWarnings("null")
     public NotificationResponse trigger(NotificationRequest request) {
         Notification notification = Notification.builder()
                 .channel(request.getChannel())
