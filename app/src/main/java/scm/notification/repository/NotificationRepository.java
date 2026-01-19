@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
-    @Query("SELECT n FROM Notification n WHERE n.status = :status AND n.updatedAt < :time")
-    List<Notification> findPendingNotificationsOlderThan(@Param("status") NotificationStatus status,
+    @Query("SELECT n FROM Notification n WHERE n.status IN :statuses AND n.updatedAt < :time")
+    List<Notification> findPendingNotifications(@Param("statuses") List<NotificationStatus> statuses,
             @Param("time") LocalDateTime time);
 }

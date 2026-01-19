@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,36 +56,39 @@ public class NotificationService {
 
     @Scheduled(fixedRate = 60000) // Check every minute
     public void processPendingNotifications() {
-        log.info("Checking for pending/stuck notifications...");
+        log.debug("Checking for pending/stuck notifications...");
         LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);
 
-        // Find PENDING > 10 mins (orphan) OR IN_PROGRESS > 10 mins (crashed)
-        // Note: For simplicity, we just look for PENDING.
-        // A robust system would also reset IN_PROGRESS if updated_at is old.
-        List<Notification> pending = repository.findPendingNotificationsOlderThan(NotificationStatus.PENDING,
-                tenMinutesAgo);
+        List<NotificationStatus> statuses = Arrays.asList(NotificationStatus.PENDING, NotificationStatus.IN_PROGRESS);
+        List<Notification> pending = repository.findPendingNotifications(statuses, tenMinutesAgo);
 
         if (pending.isEmpty()) {
             return;
         }
 
-        log.info("Found {} pending notifications to retry.", pending.size());
+        log.info("Found {} stuck notifications to retry.", pending.size());
         for (Notification n : pending) {
-            // Retrigger processing
-            n.setRetryCount(n.getRetryCount() + 1);
-            repository.save(n); // Increment count first
-            logAudit(n.getId(), "RETRYING", "Retry attempt " + n.getRetryCount());
+            try {
+                // Retrigger processing
+                n.setRetryCount(n.getRetryCount() + 1);
+                repository.save(n); // Increment count first
+                logAudit(n.getId(), "RETRYING", "Retry attempt " + n.getRetryCount());
 
-            // We call processor directly (it handles async internally)
-            notificationProcessor.process(n.getId());
+                // We call processor directly (it handles async internally)
+                notificationProcessor.process(n.getId());
+            } catch (Exception e) {
+                log.error("Failed to process stuck notification {}", n.getId(), e);
+            }
         }
     }
 
+    @SuppressWarnings("null")
     private void logAudit(UUID notificationId, String status, String details) {
-        auditLogRepository.save(NotificationAuditLog.builder()
+        NotificationAuditLog auditLog = NotificationAuditLog.builder()
                 .notificationId(notificationId)
                 .status(status)
                 .details(details)
-                .build());
+                .build();
+        auditLogRepository.save(auditLog);
     }
 }
