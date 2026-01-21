@@ -29,7 +29,12 @@ public class GlobalExceptionHandler {
         Map<String, String> errors = new HashMap<>();
 
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
+            String fieldName;
+            if (error instanceof FieldError) {
+                fieldName = ((FieldError) error).getField();
+            } else {
+                fieldName = error.getObjectName();
+            }
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
@@ -41,6 +46,42 @@ public class GlobalExceptionHandler {
 
         log.warn("Validation failed: {}", errors);
         return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * Handles malformed JSON or invalid enum values.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("error", "Malformed JSON Request");
+        response.put("message", "Invalid request body. Please check your JSON syntax and enum values.");
+        // We can optionally include ex.getMessage() if we want to leak internal
+        // details,
+        // but often it's too technical. For dev, it's fine.
+        response.put("debugMessage", ex.getMessage());
+
+        log.warn("Message not readable: {}", ex.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * Handles 404 errors when a resource or endpoint is not found.
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFoundException(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.NOT_FOUND.value());
+        response.put("error", "Not Found");
+        response.put("message", "The requested endpoint was not found: " + ex.getResourcePath());
+
+        log.warn("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     /**

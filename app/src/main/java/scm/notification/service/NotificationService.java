@@ -50,8 +50,22 @@ public class NotificationService {
 
         return NotificationResponse.builder()
                 .id(notification.getId().toString())
-                .status("QUEUED")
+                .status(NotificationStatus.PENDING)
                 .message("Notification queued for delivery")
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("null")
+    public NotificationResponse getStatus(String id) {
+        Notification notification = repository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found with ID: " + id));
+
+        return NotificationResponse.builder()
+                .id(notification.getId().toString())
+                .status(notification.getStatus())
+                .message(notification.getErrorMessage() != null ? notification.getErrorMessage()
+                        : "Status: " + notification.getStatus())
                 .build();
     }
 

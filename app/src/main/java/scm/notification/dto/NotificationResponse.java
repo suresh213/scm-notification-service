@@ -1,5 +1,6 @@
 package scm.notification.dto;
 
+import scm.notification.enums.NotificationStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -7,6 +8,6 @@ import lombok.Data;
 @Builder
 public class NotificationResponse {
     private String id;
-    private String status;
+    private NotificationStatus status;
     private String message;
 }

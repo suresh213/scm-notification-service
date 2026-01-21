@@ -51,6 +51,20 @@ public class NotificationController {
     }
 
     /**
+     * Retrieves the status of a specific notification by ID.
+     * 
+     * @param id The UUID of the notification
+     * @return Response with current status and details
+     */
+    @GetMapping("/{id}/status")
+    public ResponseEntity<NotificationResponse> getNotificationStatus(@PathVariable String id) {
+        log.info("Received request to check status for notification ID: {}", id);
+
+        NotificationResponse response = notificationService.getStatus(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Health check endpoint for load balancer probes.
      * 
      * @return OK status with simple health message
