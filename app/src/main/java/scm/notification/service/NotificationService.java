@@ -40,6 +40,7 @@ public class NotificationService {
                 .content(request.getContent())
                 .status(NotificationStatus.PENDING)
                 .retryCount(0)
+                .attachments(request.getAttachments())
                 .build();
 
         notification = repository.save(notification);

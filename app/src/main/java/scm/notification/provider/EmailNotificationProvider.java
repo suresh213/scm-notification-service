@@ -42,7 +42,7 @@ public class EmailNotificationProvider implements NotificationProvider {
 
         try {
             // Use the templated email service for production-grade emails
-            emailService.sendNotificationEmail(recipient, subject, content);
+            emailService.sendNotificationEmail(recipient, subject, content, notification.getAttachments());
 
             log.info("[EMAIL PROVIDER] Email successfully sent to: {}", recipient);
 

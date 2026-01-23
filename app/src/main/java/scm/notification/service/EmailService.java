@@ -10,10 +10,13 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.core.io.ByteArrayResource;
 import org.thymeleaf.TemplateEngine;
+import java.nio.charset.StandardCharsets;
 import org.thymeleaf.context.Context;
 
 import java.time.Year;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,12 +42,14 @@ public class EmailService {
     /**
      * Sends an email using the base notification template.
      *
-     * @param to      Recipient email address
-     * @param subject Email subject
-     * @param content Email content (can contain HTML)
+     * @param to          Recipient email address
+     * @param subject     Email subject
+     * @param content     Email content (can contain HTML)
+     * @param attachments Map of filename to content
      * @throws MessagingException if email sending fails
      */
-    public void sendNotificationEmail(String to, String subject, String content) throws MessagingException {
+    public void sendNotificationEmail(String to, String subject, String content, Map<String, String> attachments)
+            throws MessagingException {
         Map<String, Object> variables = new HashMap<>();
         variables.put("subject", subject != null ? subject : EmailConstants.SUBJECT_GENERAL_NOTIFICATION);
         variables.put("content", content);
@@ -53,7 +58,7 @@ public class EmailService {
         variables.put("companyAddress", EmailConstants.COMPANY_ADDRESS);
         variables.put("year", Year.now().getValue());
 
-        sendTemplatedEmail(to, subject, EmailConstants.TEMPLATE_BASE_NOTIFICATION, variables);
+        sendTemplatedEmail(to, subject, EmailConstants.TEMPLATE_BASE_NOTIFICATION, variables, attachments);
     }
 
     /**
@@ -63,9 +68,11 @@ public class EmailService {
      * @param subject      Email subject
      * @param templateName Template name (without .html extension)
      * @param variables    Template variables
+     * @param attachments  Map of filename to content
      * @throws MessagingException if email sending fails
      */
-    public void sendTemplatedEmail(String to, String subject, String templateName, Map<String, Object> variables)
+    public void sendTemplatedEmail(String to, String subject, String templateName, Map<String, Object> variables,
+            Map<String, String> attachments)
             throws MessagingException {
 
         log.info("[EMAIL SERVICE] Preparing templated email to: {}", to);
@@ -79,7 +86,7 @@ public class EmailService {
             String htmlContent = templateEngine.process(templateName, context);
 
             // Create and send the email
-            sendHtmlEmail(to, subject, htmlContent);
+            sendHtmlEmail(to, subject, htmlContent, attachments);
 
             log.info("[EMAIL SERVICE] Successfully sent templated email to: {}", to);
 
@@ -95,9 +102,11 @@ public class EmailService {
      * @param to          Recipient email address
      * @param subject     Email subject
      * @param htmlContent HTML content of the email
+     * @param attachments Map of filename to content
      * @throws MessagingException if email sending fails
      */
-    public void sendHtmlEmail(String to, String subject, String htmlContent) throws MessagingException {
+    public void sendHtmlEmail(String to, String subject, String htmlContent, Map<String, String> attachments)
+            throws MessagingException {
         log.info("[EMAIL SERVICE] Sending HTML email to: {}", to);
 
         try {
@@ -108,6 +117,26 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true); // true = isHtml
+
+            if (attachments != null && !attachments.isEmpty()) {
+                for (Map.Entry<String, String> entry : attachments.entrySet()) {
+                    String filename = entry.getKey();
+                    String content = entry.getValue();
+                    if (content != null) {
+                        byte[] fileBytes;
+                        try {
+                            // Strip whitespace to ensure standard Base64 parsing (MIME can be messy)
+                            String sanitized = content.replaceAll("\\s+", "");
+                            // Try to decode as Base64 (for images, pdfs, etc.)
+                            fileBytes = Base64.getDecoder().decode(sanitized);
+                        } catch (IllegalArgumentException e) {
+                            // Fallback to plain text (for ics, txt, html files sent as raw string)
+                            fileBytes = content.getBytes(StandardCharsets.UTF_8);
+                        }
+                        helper.addAttachment(filename, new ByteArrayResource(fileBytes));
+                    }
+                }
+            }
 
             mailSender.send(message);
 

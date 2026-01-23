@@ -11,6 +11,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -56,4 +58,11 @@ public class Notification {
 
     @Version // Optimistic locking
     private Long version;
+
+    @ElementCollection
+    @CollectionTable(name = "notification_attachments", joinColumns = @JoinColumn(name = "notification_id"))
+    @MapKeyColumn(name = "filename")
+    @Column(name = "content", columnDefinition = "LONGTEXT")
+    @Builder.Default
+    private Map<String, String> attachments = new HashMap<>();
 }

@@ -5,6 +5,7 @@ import scm.notification.validation.ValidRecipient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import java.util.Map;
 
 @Data
 @ValidRecipient
@@ -19,4 +20,6 @@ public class NotificationRequest {
 
     @NotBlank(message = "Content is required")
     private String content;
+
+    private Map<String, String> attachments;
 }
